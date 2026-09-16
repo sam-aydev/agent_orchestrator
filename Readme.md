@@ -7,7 +7,7 @@ An enterprise-grade, full-stack AI workflow orchestration platform that empowers
 ## 🛠️ Tech Stack
 
 ### Frontend (`client/`)
-* **Framework:** Next.js 14/15 (App Router)
+* **Framework:** Next.js 16 (App Router)
 * **Canvas Engine:** React Flow (`@xyflow/react`) with custom nodes and edge delete buttons
 * **Styling & UI:** Tailwind CSS, Framer Motion, Lucide React, Sonner (Toast notifications)
 
