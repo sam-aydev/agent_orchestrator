@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState, useTransition, useRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+  useTransition,
+  useRef,
+  Suspense,
+} from "react";
 import { useTheme } from "next-themes"; // <-- Added import
 import {
   ReactFlow,
@@ -38,11 +45,9 @@ import {
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";
-import { Bot, Plus } from "lucide-react";
+import { Bot, Loader2, Plus } from "lucide-react";
 
-// ==========================================
-// 1. CUSTOM EDGE COMPONENT (DELETE BUTTON)
-// ==========================================
+// CUSTOM EDGE COMPONENT (DELETE BUTTON)
 const CustomEdge = ({
   id,
   sourceX,
@@ -104,9 +109,7 @@ const nodeTypes = {
 
 const generateSecret = () => Math.random().toString(36).substring(2, 12);
 
-// ==========================================
-// 2. MAIN CANVAS FLOW
-// ==========================================
+// MAIN CANVAS FLOW
 function CanvasFlow() {
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
@@ -118,14 +121,13 @@ function CanvasFlow() {
   const searchParams = useSearchParams();
   const workflowId = searchParams.get("workflowId");
 
-  const { resolvedTheme } = useTheme(); // <-- Capture current theme
+  const { resolvedTheme } = useTheme();
 
   const { screenToFlowPosition } = useReactFlow();
   const hasToastedRef = useRef<boolean>(false);
 
   const nodesCountRef = useRef(0);
 
-  // Mark component as mounted to safely render theme-dependent UI
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -470,7 +472,15 @@ function CanvasFlow() {
 export default function Page() {
   return (
     <ReactFlowProvider>
-      <CanvasFlow />
+      <Suspense
+        fallback={
+          <div className="flex w-full h-screen items-center justify-center bg-[#f8fafc] dark:bg-gray-950">
+            <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+          </div>
+        }
+      >
+        <CanvasFlow />
+      </Suspense>
     </ReactFlowProvider>
   );
 }
