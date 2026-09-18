@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition, useState } from "react";
+import { useTransition, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
@@ -8,7 +8,7 @@ import { FaGithub } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { signup, githubOauth } from "@/lib/actions/auth";
 
-export default function SignupPage() {
+export function SignUpContent() {
   const searchParams = useSearchParams();
   const serverError = searchParams.get("error");
   const [isLoading, setIsLoading] = useState(false);
@@ -179,5 +179,19 @@ export default function SignupPage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          Loading...
+        </div>
+      }
+    >
+      <SignUpContent />
+    </Suspense>
   );
 }

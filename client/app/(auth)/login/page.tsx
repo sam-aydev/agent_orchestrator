@@ -1,16 +1,16 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { Suspense, useState, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Loader2, LogIn } from "lucide-react";
 import { FaGithub } from "react-icons/fa";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { githubOauth, login } from "@/lib/actions/auth";
 import { toast } from "sonner";
 import { AuthError } from "@supabase/supabase-js";
 
-export default function LoginPage() {
+export function LoginContent() {
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
   const [isPending, startTransition] = useTransition();
@@ -176,5 +176,13 @@ export default function LoginPage() {
         </motion.div>
       </motion.div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading...</div>}>
+      <LoginContent />
+    </Suspense>
   );
 }
