@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, useTransition, useRef } from "react";
+import { useTheme } from "next-themes"; // <-- Added import
 import {
   ReactFlow,
   Controls,
@@ -11,7 +12,6 @@ import {
   EdgeChange,
   Edge,
   Node,
-  MarkerType,
   useReactFlow,
   ReactFlowProvider,
   addEdge,
@@ -33,6 +33,7 @@ import {
   createBlankWorkflow,
   getWorkflowById,
   saveWorkflowConfiguration,
+  deleteWorkflow,
 } from "@/lib/actions/workflow";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
@@ -71,15 +72,14 @@ const CustomEdge = ({
           style={{
             position: "absolute",
             transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-            pointerEvents: "all", // Ensures the button is clickable
+            pointerEvents: "all",
           }}
           className="nodrag nopan"
         >
           <button
-            className="w-5 h-5 bg-white hover:bg-red-500 text-gray-400 hover:text-white rounded-full flex items-center justify-center border border-gray-200 hover:border-red-500 transition-all shadow-sm text-sm cursor-pointer z-50"
+            className="w-5 h-5 bg-white dark:bg-gray-800 hover:bg-red-500 dark:hover:bg-red-600 text-gray-400 dark:text-gray-500 hover:text-white dark:hover:text-white rounded-full flex items-center justify-center border border-gray-200 dark:border-gray-700 hover:border-red-500 dark:hover:border-red-600 transition-all shadow-sm text-sm cursor-pointer z-50"
             onClick={(event) => {
               event.stopPropagation();
-              // Instantly removes this specific edge from the canvas
               setEdges((es) => es.filter((e) => e.id !== id));
             }}
             title="Delete Connection"
@@ -112,18 +112,38 @@ function CanvasFlow() {
   const [edges, setEdges] = useState<Edge[]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [activeSidebarNode, setActiveSidebarNode] = useState<Node | null>(null);
-  const [, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
+  const [mounted, setMounted] = useState(false); // Prevents hydration mismatch on theme
 
   const searchParams = useSearchParams();
   const workflowId = searchParams.get("workflowId");
 
-  // Hook to convert screen coordinates to React Flow canvas coordinates
-  const { screenToFlowPosition } = useReactFlow();
+  const { resolvedTheme } = useTheme(); // <-- Capture current theme
 
-  // Ref to prevent toast spam during continuous hover validation
+  const { screenToFlowPosition } = useReactFlow();
   const hasToastedRef = useRef<boolean>(false);
 
-  // Load exact visual state from Supabase using workflowId
+  const nodesCountRef = useRef(0);
+
+  // Mark component as mounted to safely render theme-dependent UI
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    nodesCountRef.current = nodes.length;
+  }, [nodes]);
+
+  useEffect(() => {
+    return () => {
+      if (workflowId && nodesCountRef.current === 0) {
+        deleteWorkflow(workflowId).catch((err) => {
+          console.error("Failed to auto-cleanup empty workflow:", err);
+        });
+      }
+    };
+  }, [workflowId]);
+
   useEffect(() => {
     if (!workflowId) return;
 
@@ -132,19 +152,16 @@ function CanvasFlow() {
 
       if (result.success && result.data) {
         const dbWorkflow = result.data;
-
         if (dbWorkflow.nodes && Array.isArray(dbWorkflow.nodes)) {
           setNodes(dbWorkflow.nodes);
         } else {
           setNodes([]);
         }
-
         if (dbWorkflow.edges && Array.isArray(dbWorkflow.edges)) {
           setEdges(dbWorkflow.edges);
         } else {
           setEdges([]);
         }
-
         if (dbWorkflow.name) {
           window.dispatchEvent(
             new CustomEvent("workflow-loaded", {
@@ -158,7 +175,6 @@ function CanvasFlow() {
     loadSavedWorkflow();
   }, [workflowId]);
 
-  // Listen for save requests from the Header
   useEffect(() => {
     const handleSaveEvent = (e: Event) => {
       if (!workflowId) {
@@ -198,7 +214,6 @@ function CanvasFlow() {
       window.removeEventListener("workflow-request-save", handleSaveEvent);
   }, [nodes, edges, workflowId]);
 
-  // DRAG AND DROP HANDLERS
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
@@ -255,7 +270,6 @@ function CanvasFlow() {
         position,
         data: newNodeData,
       };
-
       setNodes((nds) => (Array.isArray(nds) ? nds.concat(newNode) : [newNode]));
     },
     [screenToFlowPosition],
@@ -266,7 +280,6 @@ function CanvasFlow() {
       setNodes((nds) => applyNodeChanges(changes, nds)),
     [],
   );
-
   const onEdgesChange = useCallback(
     (changes: EdgeChange[]) =>
       setEdges((eds) => applyEdgeChanges(changes, eds)),
@@ -275,7 +288,6 @@ function CanvasFlow() {
 
   const onConnect = useCallback(
     (params: Connection) => {
-      // Switched to our custom edge type for the delete button
       setEdges((eds) =>
         addEdge({ ...params, type: "custom", animated: true }, eds),
       );
@@ -283,7 +295,6 @@ function CanvasFlow() {
     [setEdges],
   );
 
-  // Reset the toast tracker every time a user starts dragging a new line
   const onConnectStart = useCallback(() => {
     hasToastedRef.current = false;
   }, []);
@@ -319,7 +330,6 @@ function CanvasFlow() {
         }
         return false;
       }
-
       return true;
     },
     [nodes],
@@ -355,15 +365,15 @@ function CanvasFlow() {
 
   if (!workflowId) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-[#f8fafc] w-full h-screen font-sans">
-        <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center max-w-md text-center">
-          <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mb-6 border border-emerald-100">
-            <Bot className="w-8 h-8 text-emerald-600" />
+      <div className="flex-1 flex flex-col items-center justify-center bg-[#f8fafc] dark:bg-gray-950 w-full h-screen font-sans transition-colors duration-200">
+        <div className="bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col items-center max-w-md text-center transition-colors">
+          <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-500/10 rounded-2xl flex items-center justify-center mb-6 border border-emerald-100 dark:border-emerald-500/20 transition-colors">
+            <Bot className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2 transition-colors">
             Welcome to your Workspace
           </h2>
-          <p className="text-sm text-gray-500 mb-8 leading-relaxed">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-8 leading-relaxed transition-colors">
             You don't have an active agent selected. Create a new blank canvas
             to start building your AI workflow.
           </p>
@@ -373,7 +383,6 @@ function CanvasFlow() {
               startTransition(async () => {
                 const result = await createBlankWorkflow();
                 if (result.success && result.workflowId) {
-                  // Updates the URL, which instantly mounts the React Flow canvas!
                   window.history.pushState(
                     null,
                     "",
@@ -394,12 +403,14 @@ function CanvasFlow() {
     );
   }
 
+  // Prevent hydration errors by ensuring React Flow color mode waits for client mount
+  const isDarkMode = mounted && resolvedTheme === "dark";
+
   return (
-    <div className="w-full h-screen bg-[#f8fafc] flex flex-col overflow-hidden font-sans">
+    <div className="w-full h-screen bg-[#f8fafc] dark:bg-gray-950 flex flex-col overflow-hidden font-sans transition-colors duration-200">
       <div className="flex-1 flex w-full relative overflow-hidden">
         <NodePalette />
 
-        {/* Added [&_.react-flow__pane]:cursor-crosshair to force a high-visibility cursor */}
         <div
           className="flex-1 h-full relative [&_.react-flow__pane]:cursor-crosshair"
           onDragOver={onDragOver}
@@ -420,11 +431,16 @@ function CanvasFlow() {
             fitView
             fitViewOptions={{ padding: 0.2 }}
             defaultEdgeOptions={{ type: "custom", animated: true }}
+            colorMode={isDarkMode ? "dark" : "light"} // <-- Automatically handles ReactFlow internal styles
           >
-            <Background color="#64748b" gap={24} size={1.5} />
+            <Background
+              color={isDarkMode ? "#475569" : "#94a3b8"} // Slate-600 (dark) vs Slate-400 (light)
+              gap={24}
+              size={1.5}
+            />
             <Controls
               position="bottom-left"
-              className="bg-white/95 backdrop-blur-xl shadow-2xl border-2 border-gray-200 rounded-xl overflow-hidden scale-125 origin-bottom-left m-6 text-gray-900"
+              className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl shadow-2xl border-2 border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden scale-125 origin-bottom-left m-6 text-gray-900 dark:text-gray-100 transition-colors"
             />
           </ReactFlow>
         </div>

@@ -54,34 +54,34 @@ export default async function LogsPage({
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
   return (
-    <div className="w-full h-screen bg-[#f8fafc] flex flex-col overflow-hidden font-sans">
-      
+    <div className="w-full h-screen bg-[#f8fafc] dark:bg-gray-950 flex flex-col overflow-hidden font-sans transition-colors duration-200">
       {/* Scrollable Container */}
       <div className="mt-10 w-4/5 mx-auto flex-1 overflow-hidden pb-10">
-        
         <header className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Execution Logs</h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 transition-colors">
+              Execution Logs
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 transition-colors">
               Monitor your AI agent's real-time routing decisions.
             </p>
           </div>
           <Link
             href="/app"
-            className="bg-black text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-gray-800 transition"
+            className="bg-black dark:bg-white text-white dark:text-black px-4 py-2 rounded-md text-sm font-semibold hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors"
           >
             Open Canvas
           </Link>
         </header>
 
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden flex flex-col">
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-sm overflow-hidden flex flex-col transition-colors">
           {logs.length === 0 ? (
             <div className="p-12 text-center flex flex-col items-center">
-              <Activity className="w-12 h-12 text-gray-300 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900">
+              <Activity className="w-12 h-12 text-gray-300 dark:text-gray-700 mb-4 transition-colors" />
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 transition-colors">
                 No executions yet
               </h3>
-              <p className="text-gray-500 mt-1 text-sm">
+              <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm transition-colors">
                 Submit data to your trigger webhook to see logs appear here.
               </p>
             </div>
@@ -92,18 +92,18 @@ export default async function LogsPage({
 
               {/* Pagination Controls */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-between border-t border-gray-200 bg-gray-50 px-6 py-3">
-                  <p className="text-xs text-gray-500">
+                <div className="flex items-center justify-between border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 px-6 py-3 transition-colors">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     Showing{" "}
-                    <span className="font-medium text-gray-900">
+                    <span className="font-medium text-gray-900 dark:text-gray-100">
                       {from + 1}
                     </span>{" "}
                     to{" "}
-                    <span className="font-medium text-gray-900">
+                    <span className="font-medium text-gray-900 dark:text-gray-100">
                       {Math.min(to + 1, totalCount)}
                     </span>{" "}
                     of{" "}
-                    <span className="font-medium text-gray-900">
+                    <span className="font-medium text-gray-900 dark:text-gray-100">
                       {totalCount}
                     </span>{" "}
                     results
@@ -112,7 +112,7 @@ export default async function LogsPage({
                   <div className="flex gap-2">
                     <Link
                       href={`/app/logs?page=${currentPage - 1}`}
-                      className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 transition ${
+                      className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
                         currentPage <= 1 ? "pointer-events-none opacity-50" : ""
                       }`}
                     >
@@ -121,7 +121,7 @@ export default async function LogsPage({
                     </Link>
                     <Link
                       href={`/app/logs?page=${currentPage + 1}`}
-                      className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 transition ${
+                      className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
                         currentPage >= totalPages
                           ? "pointer-events-none opacity-50"
                           : ""

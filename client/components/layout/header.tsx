@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation"; // Added useSearchParams
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Activity,
   LogOut,
@@ -10,41 +10,50 @@ import {
   LayoutTemplate,
   Save,
   Plus,
+  Layers,
+  Sun,
+  Moon,
 } from "lucide-react";
-import { signout } from "@/lib/actions/login";
+import { signout } from "@/lib/actions/auth";
 import { createBlankWorkflow, getWorkflowById } from "@/lib/actions/workflow";
 import { toast } from "sonner";
+import { useTheme } from "next-themes";
 
 export function Header() {
   const pathname = usePathname();
-  const searchParams = useSearchParams(); // Initialized the hook
+  const searchParams = useSearchParams();
 
   const [title, setTitle] = useState("Agentic Orchestrator");
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const router = useRouter();
   const [isCreating, setIsCreating] = useState(false);
+  const { theme, setTheme } = useTheme();
 
   const handleCreate = async () => {
-    setIsCreating(true);
-    const result = await createBlankWorkflow();
+    try {
+      setIsCreating(true);
+      const result = await createBlankWorkflow();
 
-    if (result.success && result.workflowId) {
-      // Instantly route them to the new blank canvas
-      router.push(`/app?workflowId=${result.workflowId}`);
-    } else {
-      toast.error("Failed to create workflow");
-      console.log(result.error);
+      if (result.success && result.workflowId) {
+        router.push(`/app?workflowId=${result.workflowId}`);
+      } else {
+        toast.error("Failed to create workflow");
+        setIsCreating(false);
+      }
+    } catch (error: any) {
+      toast.error(error.message || "An error occurred");
+    } finally {
       setIsCreating(false);
     }
   };
 
   const isBuilderActive = pathname === "/app";
   const isLogsActive = pathname === "/app/logs";
+  const isWorkflowsActive = pathname === "/app/workflows";
 
   const workflowId = searchParams.get("workflowId");
 
-  // Fixed: Standard React pattern for async data fetching inside useEffect
   useEffect(() => {
     if (!workflowId) {
       setTitle("Agentic Orchestrator");
@@ -53,21 +62,16 @@ export function Header() {
 
     async function loadWorkflowTitle() {
       const result = await getWorkflowById(workflowId as string);
-
       if (result?.data?.name) {
         setTitle(result.data.name);
       }
     }
-
     loadWorkflowTitle();
-  }, [workflowId]); // Added dependency
+  }, [workflowId]);
 
-  // Listen for save states AND workflow loads
   useEffect(() => {
     const handleSaveStart = () => setIsSaving(true);
     const handleSaveEnd = () => setIsSaving(false);
-
-    // Catch the loaded name from the canvas
     const handleWorkflowLoaded = (e: Event) => {
       const customEvent = e as CustomEvent;
       if (customEvent.detail?.name) {
@@ -86,7 +90,6 @@ export function Header() {
     };
   }, []);
 
-  // Tell the canvas to initiate the save, passing the custom title
   const triggerSave = () => {
     window.dispatchEvent(
       new CustomEvent("workflow-request-save", {
@@ -96,7 +99,7 @@ export function Header() {
   };
 
   return (
-    <header className="h-16 bg-white/70 backdrop-blur-lg border-b border-gray-200/80 flex items-center px-6 justify-between shrink-0 z-50 shadow-sm transition-all">
+    <header className="h-16 bg-white/70 dark:bg-gray-900/80 backdrop-blur-lg border-b border-gray-200/80 dark:border-gray-800 flex items-center px-6 justify-between shrink-0 z-50 shadow-sm transition-colors">
       <div className="flex items-center gap-8">
         <div className="flex items-center gap-3">
           <div className="relative flex h-3 w-3">
@@ -104,7 +107,7 @@ export function Header() {
             <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
           </div>
 
-          {isEditing ? (
+          {isEditing && isBuilderActive ? (
             <input
               autoFocus
               type="text"
@@ -112,29 +115,47 @@ export function Header() {
               onChange={(e) => setTitle(e.target.value)}
               onBlur={() => setIsEditing(false)}
               onKeyDown={(e) => e.key === "Enter" && setIsEditing(false)}
-              className="font-bold text-gray-900 tracking-tight bg-white border border-emerald-500 rounded-md px-2 py-0.5 outline-none ring-2 ring-emerald-500/20 text-base w-56 transition-all"
+              className="font-bold text-gray-900 dark:text-gray-100 tracking-tight bg-white dark:bg-gray-950 border border-emerald-500 rounded-md px-2 py-0.5 outline-none ring-2 ring-emerald-500/20 text-base w-56 transition-all"
             />
           ) : (
             <div
-              onClick={() => setIsEditing(true)}
-              className="group flex items-center gap-2 cursor-pointer hover:bg-gray-100/80 px-2 py-0.5 -ml-2 rounded-md transition-colors"
-              title="Click to rename workflow"
+              onClick={() => isBuilderActive && setIsEditing(true)}
+              className={`group flex items-center gap-2 ${isBuilderActive ? "cursor-pointer hover:bg-gray-100/80 dark:hover:bg-gray-800/80" : ""} px-2 py-0.5 -ml-2 rounded-md transition-colors`}
+              title={
+                isBuilderActive
+                  ? "Click to rename workflow"
+                  : "Agentic Orchestrator"
+              }
             >
-              <h1 className="font-bold text-gray-900 tracking-tight select-none">
+              <h1 className="font-bold text-gray-900 dark:text-gray-100 tracking-tight select-none">
                 {title}
               </h1>
-              <Edit2 className="w-3.5 h-3.5 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+              {isBuilderActive && (
+                <Edit2 className="w-3.5 h-3.5 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+              )}
             </div>
           )}
         </div>
 
-        <div className="hidden md:flex items-center gap-1 text-sm font-medium bg-gray-100/70 p-1 rounded-lg border border-gray-200/50">
+        <div className="hidden md:flex items-center gap-1 text-sm font-medium bg-gray-100/70 dark:bg-gray-800/50 p-1 rounded-lg border border-gray-200/50 dark:border-gray-700/50 transition-colors">
+          <Link
+            href="/app/workflows"
+            className={`px-3 py-1.5 rounded-md flex items-center gap-2 transition-all duration-200 ${
+              isWorkflowsActive
+                ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm border border-gray-200/50 dark:border-gray-600/50"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200/50 dark:hover:bg-gray-700/50 border border-transparent"
+            }`}
+          >
+            <Layers className="w-4 h-4" />
+            Workflows
+          </Link>
+
           <Link
             href="/app"
             className={`px-3 py-1.5 rounded-md flex items-center gap-2 transition-all duration-200 ${
               isBuilderActive
-                ? "bg-white text-gray-900 shadow-sm border border-gray-200/50"
-                : "text-gray-500 hover:text-gray-900 hover:bg-gray-200/50 border border-transparent"
+                ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm border border-gray-200/50 dark:border-gray-600/50"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200/50 dark:hover:bg-gray-700/50 border border-transparent"
             }`}
           >
             <LayoutTemplate className="w-4 h-4" />
@@ -145,8 +166,8 @@ export function Header() {
             href="/app/logs"
             className={`px-3 py-1.5 rounded-md flex items-center gap-2 transition-all duration-200 ${
               isLogsActive
-                ? "bg-white text-gray-900 shadow-sm border border-gray-200/50"
-                : "text-gray-500 hover:text-gray-900 hover:bg-gray-200/50 border border-transparent"
+                ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm border border-gray-200/50 dark:border-gray-600/50"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200/50 dark:hover:bg-gray-700/50 border border-transparent"
             }`}
           >
             <Activity className="w-4 h-4" />
@@ -156,6 +177,16 @@ export function Header() {
       </div>
 
       <div className="flex items-center gap-4">
+        <button
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          className="p-2 rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors"
+        >
+          {theme === "dark" ? (
+            <Sun className="h-4 w-4  " />
+          ) : (
+            <Moon className="h-4 w-4 " />
+          )}
+        </button>
         <button
           onClick={handleCreate}
           disabled={isCreating}
@@ -168,15 +199,15 @@ export function Header() {
           )}
           New Agent
         </button>
-        {isBuilderActive && (
+        {isBuilderActive && workflowId && (
           <button
             onClick={triggerSave}
             disabled={isSaving}
-            className="bg-gray-900 cursor-pointer text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-md shadow-gray-900/10 hover:shadow-lg"
+            className="bg-gray-900 dark:bg-white cursor-pointer text-white dark:text-gray-900 px-5 py-2 rounded-lg text-sm font-semibold hover:bg-gray-800 dark:hover:bg-gray-100 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-md hover:shadow-lg"
           >
             {isSaving ? (
               <>
-                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="w-3.5 h-3.5 border-2 border-white/30 dark:border-gray-900/30 border-t-white dark:border-t-gray-900 rounded-full animate-spin" />
                 Deploying...
               </>
             ) : (
@@ -188,13 +219,13 @@ export function Header() {
           </button>
         )}
 
-        <div className="w-px h-6 bg-gray-200 mx-1 hidden md:block"></div>
+        <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1 hidden md:block transition-colors"></div>
 
         <form action={signout}>
           <button
             type="submit"
             title="Sign Out"
-            className="text-gray-500 cursor-pointer hover:text-red-600 transition-colors p-2 rounded-full hover:bg-red-50"
+            className="text-gray-500 dark:text-gray-400 cursor-pointer hover:text-red-600 dark:hover:text-red-500 transition-colors p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-950/30"
           >
             <LogOut className="w-4 h-4" />
           </button>
