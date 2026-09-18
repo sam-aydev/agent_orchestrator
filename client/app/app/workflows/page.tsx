@@ -3,6 +3,7 @@ import { Bot, Layers, ChevronLeft, ChevronRight, SearchX } from "lucide-react";
 import WorkflowCard from "@/components/workflow/workflowcard";
 import WorkflowSearch from "@/components/workflow/workflowsearch";
 import Link from "next/link";
+import { Suspense } from "react";
 
 export default async function WorkflowsPage(props: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -37,8 +38,13 @@ export default async function WorkflowsPage(props: {
           </p>
         </header>
 
-        <WorkflowSearch initialSearch={search} />
-
+        <Suspense
+          fallback={
+            <div className="w-full max-w-md h-10 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse mb-8" />
+          }
+        >
+          <WorkflowSearch initialSearch={search} />
+        </Suspense>
         {workflows.length === 0 ? (
           <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-12 text-center flex flex-col items-center shadow-sm">
             {search ? (

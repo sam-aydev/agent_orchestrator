@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Activity, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import LogsTable from "@/components/logs/logstable";
+import { Suspense } from "react";
 
 export default async function LogsPage({
   searchParams,
@@ -12,13 +13,13 @@ export default async function LogsPage({
   const supabase = await createClient();
   const resolvedParams = await searchParams;
 
-  // 1. Pagination Setup
+  // Pagination Setup
   const ITEMS_PER_PAGE = 3;
   const currentPage = Number(resolvedParams?.page) || 1;
   const from = (currentPage - 1) * ITEMS_PER_PAGE;
   const to = from + ITEMS_PER_PAGE - 1;
 
-  // 2. Verify the user session securely on the server
+  // Verify the user session securely on the server
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -27,7 +28,7 @@ export default async function LogsPage({
     redirect("/login");
   }
 
-  // 3. Fetch the user's workflows
+  // Fetch the user's workflows
   const { data: workflows } = await supabase
     .from("workflows")
     .select("id, name")
@@ -35,7 +36,7 @@ export default async function LogsPage({
 
   const workflowIds = workflows?.map((w) => w.id) || [];
 
-  // 4. Fetch Paginated Execution Logs
+  // Fetch Paginated Execution Logs
   let logs: any[] = [];
   let totalCount = 0;
 
@@ -86,9 +87,11 @@ export default async function LogsPage({
               </p>
             </div>
           ) : (
+
             <>
-              {/* Inject the Client Component Table */}
+            <Suspense fallback={<div className="w-full max-w-md h-10 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse mb-8" />}>
               <LogsTable logs={logs} />
+            </Suspense>
 
               {/* Pagination Controls */}
               {totalPages > 1 && (
