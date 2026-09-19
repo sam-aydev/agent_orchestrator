@@ -16,24 +16,28 @@ export default function Page() {
   return (
     <div className="h-screen w-full bg-[#fafafa] font-sans text-gray-900 selection:bg-emerald-100 selection:text-emerald-900">
       {/* Navigation */}
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-gray-200/50 bg-white/70 backdrop-blur-lg">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-          <div className="flex items-center gap-2 font-bold tracking-tight text-gray-900">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-black">
-              <Bot className="h-5 w-5 text-white" />
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-gray-200/50 dark:border-gray-800/50 bg-white/70 dark:bg-black backdrop-blur-lg transition-colors">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
+          {/* BRANDING */}
+          <div className="flex items-center gap-2 font-bold tracking-tight text-gray-900 dark:text-gray-100">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-black dark:bg-white transition-colors">
+              <Bot className="h-5 w-5 text-white dark:text-black transition-colors" />
             </div>
-            Agentic Orchestrator
+            {/* Hidden on ultra-small mobile screens, visible on 'sm' and up */}
+            <span className="hidden sm:inline-block">Agentic Orchestrator</span>
           </div>
-          <div className="flex items-center gap-4 text-sm font-medium">
+
+          {/* ACTIONS */}
+          <div className="flex items-center gap-3 sm:gap-4 text-sm font-medium">
             <Link
               href="/login"
-              className="text-gray-600 transition-colors hover:text-gray-900"
+              className="text-gray-600 dark:text-white transition-colors hover:text-gray-900 dark:hover:text-gray-100"
             >
               Sign In
             </Link>
             <Link
               href="/signup"
-              className="rounded-lg bg-black px-4 py-2 text-white transition-all hover:bg-gray-800 active:scale-95"
+              className="rounded-lg bg-black dark:bg-white px-3 py-1.5 sm:px-4 sm:py-2 text-white dark:text-black transition-all hover:bg-gray-800 dark:hover:bg-gray-200 active:scale-95 text-xs sm:text-sm"
             >
               Get Started
             </Link>
@@ -67,9 +71,7 @@ export default function Page() {
             className="mx-auto max-w-4xl text-5xl font-extrabold tracking-tighter sm:text-7xl"
           >
             Orchestrate AI Agents <br className="hidden sm:block" />
-            <span >
-              At The Speed of Thought
-            </span>
+            <span>At The Speed of Thought</span>
           </motion.h1>
 
           <motion.p
@@ -96,12 +98,9 @@ export default function Page() {
               Start Building Free
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
-          
           </motion.div>
         </div>
-
       </section>
-
     </div>
   );
 }

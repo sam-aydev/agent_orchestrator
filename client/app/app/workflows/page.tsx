@@ -28,12 +28,12 @@ export default async function WorkflowsPage(props: {
   return (
     <div className="w-full h-full overflow-y-auto bg-[#f8fafc] dark:bg-gray-950 font-sans flex flex-col items-center pb-24 transition-colors">
       <div className="w-full max-w-6xl px-6 py-12">
-        <header className="mb-10">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-3">
+        <header className="my-10">
+          <h1 className="text-sm md:text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-3">
             <Layers className="w-8 h-8 text-emerald-600 dark:text-emerald-500" />
             Your Workflows
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-2 text-sm">
+          <p className="text-gray-500 dark:text-gray-400 mt-2 text-xs md:text-sm">
             Manage, edit, and monitor your automated agentic pipelines.
           </p>
         </header>

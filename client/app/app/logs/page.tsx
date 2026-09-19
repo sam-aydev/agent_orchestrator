@@ -58,18 +58,18 @@ export default async function LogsPage({
     <div className="w-full h-screen bg-[#f8fafc] dark:bg-gray-950 flex flex-col overflow-hidden font-sans transition-colors duration-200">
       {/* Scrollable Container */}
       <div className="mt-10 w-4/5 mx-auto flex-1 overflow-hidden pb-10">
-        <header className="mb-8 flex items-center justify-between">
+        <header className="my-10 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 transition-colors">
+            <h1 className="text-sm md:text-2xl font-bold text-gray-900 dark:text-gray-100 transition-colors">
               Execution Logs
             </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 transition-colors">
+            <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-1 transition-colors">
               Monitor your AI agent's real-time routing decisions.
             </p>
           </div>
           <Link
             href="/app"
-            className="bg-black dark:bg-white text-white dark:text-black px-4 py-2 rounded-md text-sm font-semibold hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors"
+            className="bg-black dark:bg-white text-white dark:text-black px-4 py-2 rounded-md text-xs md:text-sm font-semibold hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors"
           >
             Open Canvas
           </Link>
@@ -87,11 +87,14 @@ export default async function LogsPage({
               </p>
             </div>
           ) : (
-
             <>
-            <Suspense fallback={<div className="w-full max-w-md h-10 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse mb-8" />}>
-              <LogsTable logs={logs} />
-            </Suspense>
+              <Suspense
+                fallback={
+                  <div className="w-full max-w-md h-10 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse mb-8" />
+                }
+              >
+                <LogsTable logs={logs} />
+              </Suspense>
 
               {/* Pagination Controls */}
               {totalPages > 1 && (

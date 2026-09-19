@@ -8,7 +8,7 @@ import {
   useRef,
   Suspense,
 } from "react";
-import { useTheme } from "next-themes"; // <-- Added import
+import { useTheme } from "next-themes";
 import {
   ReactFlow,
   Controls,
@@ -45,7 +45,7 @@ import {
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";
-import { Bot, Loader2, Plus } from "lucide-react";
+import { Bot, Loader2, Plus, Menu } from "lucide-react";
 
 // CUSTOM EDGE COMPONENT (DELETE BUTTON)
 const CustomEdge = ({
@@ -116,7 +116,10 @@ function CanvasFlow() {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [activeSidebarNode, setActiveSidebarNode] = useState<Node | null>(null);
   const [isPending, startTransition] = useTransition();
-  const [mounted, setMounted] = useState(false); // Prevents hydration mismatch on theme
+  const [mounted, setMounted] = useState(false);
+
+  // NEW: State to control the mobile node palette drawer
+  const [isMobilePaletteOpen, setIsMobilePaletteOpen] = useState(false);
 
   const searchParams = useSearchParams();
   const workflowId = searchParams.get("workflowId");
@@ -225,6 +228,9 @@ function CanvasFlow() {
     (event: React.DragEvent) => {
       event.preventDefault();
 
+      // Close mobile palette automatically after dropping
+      setIsMobilePaletteOpen(false);
+
       const type = event.dataTransfer.getData("application/reactflow/type");
       const actionType = event.dataTransfer.getData(
         "application/reactflow/actionType",
@@ -235,6 +241,60 @@ function CanvasFlow() {
       const position = screenToFlowPosition({
         x: event.clientX,
         y: event.clientY,
+      });
+
+      const newNodeId = crypto.randomUUID();
+      let newNodeData: Record<string, any> = { label: `New ${type}` };
+
+      if (type === "trigger") {
+        newNodeData = {
+          label: "Webhook Trigger",
+          endpointSecret: `sec_${generateSecret()}`,
+        };
+      } else if (type === "agent") {
+        newNodeData = { label: "AI Classifier" };
+      } else if (type === "action") {
+        if (actionType === "discord") {
+          newNodeData = {
+            label: "Discord Alert",
+            iconColor: "border-indigo-500",
+            actionType: "discord",
+            discordWebhookUrl: "",
+          };
+        } else if (actionType === "notion") {
+          newNodeData = {
+            label: "Notion CRM",
+            iconColor: "border-slate-800",
+            actionType: "notion",
+            notionApiKey: "",
+            notionDatabaseId: "",
+          };
+        }
+      }
+
+      const newNode: Node = {
+        id: newNodeId,
+        type,
+        position,
+        data: newNodeData,
+      };
+      setNodes((nds) => (Array.isArray(nds) ? nds.concat(newNode) : [newNode]));
+    },
+    [screenToFlowPosition],
+  );
+
+  const handleAddNodeClick = useCallback(
+    (type: string, actionType?: string) => {
+      setIsMobilePaletteOpen(false);
+
+      // To add slight random offsets so multiple clicks don't stack directly on top of each other
+      const offsetX = Math.random() * 50 - 25;
+      const offsetY = Math.random() * 50 - 25;
+
+      // To drop it right in the center of the user's screen
+      const position = screenToFlowPosition({
+        x: window.innerWidth / 2 + offsetX,
+        y: window.innerHeight / 2 + offsetY,
       });
 
       const newNodeId = crypto.randomUUID();
@@ -367,8 +427,8 @@ function CanvasFlow() {
 
   if (!workflowId) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-[#f8fafc] dark:bg-gray-950 w-full h-screen font-sans transition-colors duration-200">
-        <div className="bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col items-center max-w-md text-center transition-colors">
+      <div className="flex-1 flex flex-col items-center mt-5 justify-center bg-[#f8fafc] dark:bg-gray-950 w-[95%] w-full px-4 mx-auto h-screen font-sans transition-colors duration-200">
+        <div className="bg-white dark:bg-gray-900 p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col items-center w-full max-w-md text-center transition-colors">
           <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-500/10 rounded-2xl flex items-center justify-center mb-6 border border-emerald-100 dark:border-emerald-500/20 transition-colors">
             <Bot className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
           </div>
@@ -395,7 +455,7 @@ function CanvasFlow() {
                 }
               });
             }}
-            className="cursor-pointer flex items-center gap-2 bg-emerald-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-emerald-700 transition-all shadow-sm hover:shadow-md"
+            className="cursor-pointer flex items-center justify-center w-full sm:w-auto gap-2 bg-emerald-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-emerald-700 transition-all shadow-sm hover:shadow-md"
           >
             <Plus className="w-5 h-5" />
             Create New Agent
@@ -405,16 +465,55 @@ function CanvasFlow() {
     );
   }
 
-  // Prevent hydration errors by ensuring React Flow color mode waits for client mount
   const isDarkMode = mounted && resolvedTheme === "dark";
 
   return (
-    <div className="w-full h-screen bg-[#f8fafc] dark:bg-gray-950 flex flex-col overflow-hidden font-sans transition-colors duration-200">
+    <div className="w-full h-screen bg-[#f8fafc] dark:bg-gray-950 flex flex-col overflow-hidden font-sans transition-colors duration-200 relative">
       <div className="flex-1 flex w-full relative overflow-hidden">
-        <NodePalette />
+        {/* DESKTOP NODE PALETTE */}
+        <div className="hidden md:block z-30 h-full pt-16">
+          <NodePalette onAddNode={handleAddNodeClick} />
+        </div>
+
+        {/* MOBILE: FLOATING ADD NODE BUTTON */}
+        <div className="md:hidden absolute top-20 left-4 z-40">
+          <button
+            onClick={() => setIsMobilePaletteOpen(!isMobilePaletteOpen)}
+            className="cursor-pointer flex items-center gap-2 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 px-4 py-2.5 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 font-semibold text-sm transition-colors"
+          >
+            <Menu className="w-4 h-4" />
+            Node Library
+          </button>
+        </div>
+
+        {/* MOBILE: NODE PALETTE SLIDE-OUT DRAWER */}
+        <AnimatePresence>
+          {isMobilePaletteOpen && (
+            <>
+              {/* BACKDROP */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsMobilePaletteOpen(false)}
+                className="absolute inset-0 z-40 bg-gray-900/30 dark:bg-black/50 backdrop-blur-sm md:hidden"
+              />
+              {/* PANEL */}
+              <motion.div
+                initial={{ x: "-100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "-100%" }}
+                transition={{ type: "spring", bounce: 0, duration: 0.4 }}
+                className="absolute top-0 left-0 h-full z-50 md:hidden shadow-2xl"
+              >
+                <NodePalette onAddNode={handleAddNodeClick} />
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
 
         <div
-          className="flex-1 h-full relative [&_.react-flow__pane]:cursor-crosshair"
+          className="flex-1 h-full w-full relative [&_.react-flow__pane]:cursor-crosshair"
           onDragOver={onDragOver}
           onDrop={onDrop}
         >
@@ -433,20 +532,22 @@ function CanvasFlow() {
             fitView
             fitViewOptions={{ padding: 0.2 }}
             defaultEdgeOptions={{ type: "custom", animated: true }}
-            colorMode={isDarkMode ? "dark" : "light"} // <-- Automatically handles ReactFlow internal styles
+            colorMode={isDarkMode ? "dark" : "light"}
           >
             <Background
-              color={isDarkMode ? "#475569" : "#94a3b8"} // Slate-600 (dark) vs Slate-400 (light)
+              color={isDarkMode ? "#475569" : "#94a3b8"}
               gap={24}
               size={1.5}
             />
+            {/* SCALED DOWN ON MOBILE */}
             <Controls
               position="bottom-left"
-              className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl shadow-2xl border-2 border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden scale-125 origin-bottom-left m-6 text-gray-900 dark:text-gray-100 transition-colors"
+              className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl shadow-2xl border-2 border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden scale-100 sm:scale-125 origin-bottom-left m-4 sm:m-6 text-gray-900 dark:text-gray-100 transition-colors"
             />
           </ReactFlow>
         </div>
 
+        {/* RESPONSIVE NODE CONFIG SIDEBAR */}
         <AnimatePresence>
           {selectedNodeId && activeSidebarNode && (
             <motion.div
@@ -454,7 +555,8 @@ function CanvasFlow() {
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: "100%", opacity: 0.5 }}
               transition={{ type: "spring", bounce: 0, duration: 0.4 }}
-              className="absolute top-0 right-0 h-full shadow-2xl z-40"
+              // w-full on mobile, fixed max-width on sm+ screens
+              className="absolute top-0 right-0 h-full w-full sm:w-auto sm:max-w-md shadow-2xl z-50"
             >
               <NodeConfigSidebar
                 selectedNode={activeSidebarNode}
@@ -474,7 +576,7 @@ export default function Page() {
     <ReactFlowProvider>
       <Suspense
         fallback={
-          <div className="flex w-full h-screen items-center justify-center bg-[#f8fafc] dark:bg-gray-950">
+          <div className="flex w-full h-screen items-center justify-center bg-[#f8fafc] dark:bg-gray-950 transition-colors">
             <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
           </div>
         }
