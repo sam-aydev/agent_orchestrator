@@ -4,6 +4,12 @@ import WorkflowCard from "@/components/workflow/workflowcard";
 import WorkflowSearch from "@/components/workflow/workflowsearch";
 import Link from "next/link";
 import { Suspense } from "react";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Your Workflows - Agentic Orchestrator",
+  description: "Manage, edit, and monitor your automated agentic pipelines.",
+};
 
 export default async function WorkflowsPage(props: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;

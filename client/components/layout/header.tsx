@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -15,6 +15,7 @@ import {
   Moon,
   Menu,
   X,
+  Loader2,
 } from "lucide-react";
 import { signout } from "@/lib/actions/auth";
 import { createBlankWorkflow, getWorkflowById } from "@/lib/actions/workflow";
@@ -31,6 +32,9 @@ export function Header() {
   const [isSaving, setIsSaving] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const [isSigningOut, startSignout] = useTransition();
+
   const router = useRouter();
   const { theme, setTheme } = useTheme();
 
@@ -53,11 +57,23 @@ export function Header() {
     }
   };
 
-  const isBuilderActive = pathname === "/app";
+  const handleSignOut = (e: React.FormEvent) => {
+    e.preventDefault();
+    startSignout(async () => {
+      await signout();
+    });
+  };
+
+  const workflowId = searchParams.get("workflowId");
+
+  // SEPARATED LOGIC:
+  // 1. Used for navigation tab highlighting
+  const isBuilderRoute = pathname === "/app";
   const isLogsActive = pathname === "/app/logs";
   const isWorkflowsActive = pathname === "/app/workflows";
 
-  const workflowId = searchParams.get("workflowId");
+  // 2. Used to allow title editing and saving (only when a workspace is loaded)
+  const isWorkspaceActive = isBuilderRoute && !!workflowId;
 
   useEffect(() => {
     if (!workflowId) {
@@ -124,22 +140,30 @@ export function Header() {
             <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
           </div>
 
-          {isEditing && isBuilderActive ? (
+          {isEditing && isWorkspaceActive ? (
             <input
               autoFocus
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              onBlur={() => setIsEditing(false)}
-              onKeyDown={(e) => e.key === "Enter" && setIsEditing(false)}
+              onBlur={() => {
+                setIsEditing(false);
+                triggerSave();
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  setIsEditing(false);
+                  triggerSave();
+                }
+              }}
               className="font-bold text-gray-900 dark:text-gray-100 tracking-tight bg-white dark:bg-gray-950 border border-emerald-500 rounded-md px-2 py-0.5 outline-none ring-2 ring-emerald-500/20 text-base w-32 sm:w-56 transition-all"
             />
           ) : (
             <div
-              onClick={() => isBuilderActive && setIsEditing(true)}
-              className={`group flex items-center gap-2 ${isBuilderActive ? "cursor-pointer hover:bg-gray-100/80 dark:hover:bg-gray-800/80" : ""} px-2 py-0.5 -ml-2 rounded-md transition-colors max-w-[140px] sm:max-w-none`}
+              onClick={() => isWorkspaceActive && setIsEditing(true)}
+              className={`group flex items-center gap-2 ${isWorkspaceActive ? "cursor-pointer hover:bg-gray-100/80 dark:hover:bg-gray-800/80" : ""} px-2 py-0.5 -ml-2 rounded-md transition-colors max-w-[140px] sm:max-w-none`}
               title={
-                isBuilderActive
+                isWorkspaceActive
                   ? "Click to rename workflow"
                   : "Agentic Orchestrator"
               }
@@ -147,7 +171,7 @@ export function Header() {
               <h1 className="font-bold text-gray-900 dark:text-gray-100 tracking-tight select-none truncate">
                 {title}
               </h1>
-              {isBuilderActive && (
+              {isWorkspaceActive && (
                 <Edit2 className="w-3.5 h-3.5 shrink-0 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block" />
               )}
             </div>
@@ -171,7 +195,7 @@ export function Header() {
           <Link
             href="/app"
             className={`px-3 py-1.5 rounded-md flex items-center gap-2 transition-all duration-200 ${
-              isBuilderActive
+              isBuilderRoute
                 ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm border border-gray-200/50 dark:border-gray-600/50"
                 : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-200/50 dark:hover:bg-gray-700/50 border border-transparent"
             }`}
@@ -198,7 +222,7 @@ export function Header() {
       <div className="flex items-center gap-2 sm:gap-4">
         <button
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          className="p-2 rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors"
+          className="cursor-pointer p-2 rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors"
         >
           {theme === "dark" ? (
             <Sun className="h-4 w-4" />
@@ -220,7 +244,7 @@ export function Header() {
           <span className="hidden sm:inline">New Agent</span>
         </button>
 
-        {isBuilderActive && workflowId && (
+        {isWorkspaceActive && (
           <button
             onClick={triggerSave}
             disabled={isSaving}
@@ -242,13 +266,19 @@ export function Header() {
 
         <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1 hidden sm:block transition-colors"></div>
 
-        <form action={signout} className="hidden sm:block">
+        {/* DESKTOP SIGNOUT BUTTON */}
+        <form onSubmit={handleSignOut} className="hidden sm:block">
           <button
             type="submit"
             title="Sign Out"
-            className="text-gray-500 dark:text-gray-400 cursor-pointer hover:text-red-600 dark:hover:text-red-500 transition-colors p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-950/30"
+            disabled={isSigningOut}
+            className="text-gray-500 dark:text-gray-400 cursor-pointer hover:text-red-600 dark:hover:text-red-500 transition-colors p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <LogOut className="w-4 h-4" />
+            {isSigningOut ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <LogOut className="w-4 h-4" />
+            )}
           </button>
         </form>
       </div>
@@ -293,7 +323,7 @@ export function Header() {
                   href="/app"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`px-4 py-3.5 rounded-xl flex items-center gap-3 transition-colors ${
-                    isBuilderActive
+                    isBuilderRoute
                       ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold"
                       : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/80 font-medium"
                   }`}
@@ -317,13 +347,19 @@ export function Header() {
 
                 <div className="h-px bg-gray-100 dark:bg-gray-800/80 my-3"></div>
 
-                <form action={signout}>
+                {/* MOBILE SIGNOUT BUTTON */}
+                <form onSubmit={handleSignOut}>
                   <button
                     type="submit"
-                    className="w-full px-4 py-3.5 rounded-xl flex items-center gap-3 font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors text-left"
+                    disabled={isSigningOut}
+                    className="w-full px-4 py-3.5 rounded-xl flex items-center gap-3 font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <LogOut className="w-5 h-5" />
-                    Sign Out
+                    {isSigningOut ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <LogOut className="w-5 h-5" />
+                    )}
+                    {isSigningOut ? "Signing Out..." : "Sign Out"}
                   </button>
                 </form>
               </div>

@@ -4,6 +4,12 @@ import { Activity, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import LogsTable from "@/components/logs/logstable";
 import { Suspense } from "react";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Execution Logs - Agentic Orchestrator",
+  description: "Monitor live workflow executions, API payload logs, and webhook triggers for your AI agents.",
+};
 
 export default async function LogsPage({
   searchParams,

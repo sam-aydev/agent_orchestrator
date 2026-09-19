@@ -44,19 +44,17 @@ export async function signout() {
 
 export async function githubOauth() {
   const supabase = await createClient();
-  console.log("On github action server");
+
   const { error, data } = await supabase.auth.signInWithOAuth({
     provider: "github",
     options: {
       redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/app`,
     },
   });
-  if (data?.url) {
-    redirect(data.url);
-  }
 
   if (error) {
-    console.error("GitHub Auth Error:", error.message);
+    return { error: error.message };
   }
-  return { error, success: "Success" };
+
+  return { url: data?.url };
 }

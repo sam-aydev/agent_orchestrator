@@ -50,7 +50,7 @@ export default function WorkflowCard({ workflow }: { workflow: any }) {
                   e.stopPropagation(); 
                   setIsModalOpen(true);
                 }}
-                className="p-1.5 text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-md transition-all opacity-0 group-hover:opacity-100"
+                className="p-1.5 cursor-pointer text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-md transition-all opacity-0 group-hover:opacity-100"
                 title="Delete workflow"
               >
                 <Trash2 className="w-4 h-4" />
@@ -112,7 +112,7 @@ export default function WorkflowCard({ workflow }: { workflow: any }) {
                   setIsModalOpen(false);
                 }}
                 disabled={isDeleting}
-                className="px-4 py-2 text-sm font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-colors disabled:opacity-50"
+                className="cursor-pointer px-4 py-2 text-sm font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -122,7 +122,7 @@ export default function WorkflowCard({ workflow }: { workflow: any }) {
                   handleDelete();
                 }}
                 disabled={isDeleting}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 rounded-xl transition-colors shadow-sm disabled:opacity-50"
+                className="cursor-pointer flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 rounded-xl transition-colors shadow-sm disabled:opacity-50"
               >
                 {isDeleting ? (
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
