@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/lib/providers/themeprovider";
 import { ReactQueryProvider } from "@/lib/providers/reactqueryprovider";
+import { NetworkAlert } from "@/lib/providers/networkalert";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,6 +39,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <ReactQueryProvider>
             <Toaster />
+            <NetworkAlert/>
             {children}
           </ReactQueryProvider>
         </ThemeProvider>
