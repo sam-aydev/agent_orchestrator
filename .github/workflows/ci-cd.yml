@@ -1,0 +1,64 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  frontend-ci:
+    name: Next.js Frontend Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./client 
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: './client/package-lock.json' 
+      - name: Install frontend dependencies
+        run: npm ci 
+        
+      - name: Run Next.js Linting
+        run: npm run lint
+        
+      - name: Test Frontend Build
+        run: npm run build
+
+  backend-ci:
+    name: FastAPI Backend Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./server 
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+          
+      - name: Set up Python 3.12
+        run: uv python install 3.12
+        
+      - name: Install backend dependencies
+        run: uv sync
+        
+      - name: Validate Dependencies
+        run: uv lock --locked 
+
+  deploy-backend:
+    name: Deploy Backend to Render
+    needs: [frontend-ci, backend-ci]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render Deploy Hook
+        run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
